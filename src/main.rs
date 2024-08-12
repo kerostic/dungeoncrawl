@@ -1,9 +1,11 @@
-mod map;
-mod map_builder;
-mod camera;
+#![warn(clippy::pedantic)]
+
 mod components;
 mod spawner;
+mod map;
+mod map_builder;
 mod systems;
+mod camera;
 mod turn_state;
 
 mod prelude {
@@ -15,22 +17,23 @@ mod prelude {
     pub const SCREEN_HEIGHT: i32 = 50;
     pub const DISPLAY_WIDTH: i32 = SCREEN_WIDTH / 2;
     pub const DISPLAY_HEIGHT: i32 = SCREEN_HEIGHT / 2;
-    pub use crate::map::*;
-    pub use crate::map_builder::*;
-    pub use crate::camera::*;
     pub use crate::components::*;
     pub use crate::spawner::*;
+    pub use crate::map::*;
     pub use crate::systems::*;
+    pub use crate::map_builder::*;
+    pub use crate::camera::*;
     pub use crate::turn_state::*;
 }
+
 use prelude::*;
 
 struct State {
     ecs : World,
-    resources : Resources,
-    input_systems : Schedule,
-    player_systems : Schedule,
-    monster_systems : Schedule
+    resources: Resources,
+    input_systems: Schedule,
+    player_systems: Schedule,
+    monster_systems: Schedule
 }
 
 impl State {
@@ -48,15 +51,16 @@ impl State {
         resources.insert(map_builder.map);
         resources.insert(Camera::new(map_builder.player_start));
         resources.insert(TurnState::AwaitingInput);
-        Self { 
+        Self {
             ecs,
             resources,
             input_systems: build_input_scheduler(),
             player_systems: build_player_scheduler(),
             monster_systems: build_monster_scheduler()
         }
-    }   
+    }
 }
+
 impl GameState for State {
     fn tick(&mut self, ctx: &mut BTerm) {
         ctx.set_active_console(0);
@@ -67,10 +71,10 @@ impl GameState for State {
         let current_state = self.resources.get::<TurnState>().unwrap().clone();
         match current_state {
             TurnState::AwaitingInput => self.input_systems.execute(
-                &mut self.ecs,
+                &mut self.ecs, 
                 &mut self.resources
             ),
-            TurnState::PlayerTurn {
+            TurnState::PlayerTurn => {
                 self.player_systems.execute(&mut self.ecs, &mut self.resources);
             }
             TurnState::MonsterTurn => {
@@ -80,6 +84,7 @@ impl GameState for State {
         render_draw_buffer(ctx).expect("Render error");
     }
 }
+
 fn main() -> BError {
     let context = BTermBuilder::new()
         .with_title("Dungeon Crawler")
@@ -91,6 +96,6 @@ fn main() -> BError {
         .with_simple_console(DISPLAY_WIDTH, DISPLAY_HEIGHT, "dungeonfont.png")
         .with_simple_console_no_bg(DISPLAY_WIDTH, DISPLAY_HEIGHT, "dungeonfont.png")
         .build()?;
-    
+
     main_loop(context, State::new())
 }
